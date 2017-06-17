@@ -120,3 +120,12 @@ print(rF.score(x_test,y_test))
 print(model_knc.score(x_test,y_test))
 print(model_lr.score(x_test,y_test))
 print(model_svc.score(x_test,y_test))
+
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+# reg = GradientBoostingRegressor(n_estimators=10000, max_depth=3, random_state=2)
+# reg.fit(x_train, y_train)
+clf = GradientBoostingClassifier(n_estimators=249, max_depth=13, max_features=12, random_state=2, warm_start=1, verbose=1)
+clf.fit(x_train, y_train)
+
+# print(reg.score(x_test,y_test))
+print(clf.score(x_test,y_test))
