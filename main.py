@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random as rn
 
+import h2o as h2
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from sklearn.metrics import accuracy_score # Array comparison
+
+
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+
+
 from sklearn.cross_validation import train_test_split
 
 from sklearn.naive_bayes import GaussianNB
@@ -12,36 +20,41 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 data_set = pd.read_csv("HR_comma_sep.csv",",")
-#print(data_set.info())
+print(data_set.info())
 # print(data_set.head(10))
 
 # data_set.pivot_table('last_evaluation', 'number_project','left').plot(kind='bar', stacked=True)
 # print(data_set.pivot_table('last_evaluation', 'number_project', 'left'))
 # plt.show()
 
-
-
 #F.E.:
 # data_set['Hours|Proj'] = data_set["average_montly_hours"]/data_set["number_project"]
 #print(data_set["number_project"].unique())
 
 #proj:
-# data_set["Have7proj"] = data_set["number_project"].apply(lambda x: 1 if x == 7 else 0 ) #24%
-data_set["Have7or6proj"] = data_set["number_project"].apply(lambda x: 1 if x == 7 or x ==6 else 0 ) #30%
-# data_set["Have6proj"] = data_set["number_project"].apply(lambda x: 1 if x == 6 else 0 ) #22%
-# data_set["Have4proj"] = data_set["number_project"].apply(lambda x: 1 if x == 4 else 0 ) #22%
-data_set["Have4or3proj"] = data_set["number_project"].apply(lambda x: 1 if x == 4 or x ==3 else 0 ) #48% !!!
-# data_set["Have3proj"] = data_set["number_project"].apply(lambda x: 1 if x == 3 else 0 ) # 31%
+data_set["Have7proj"] = data_set["number_project"].apply(lambda x: 1 if x == 7 else 0 ) #24%
+# data_set["Have7or6proj"] = data_set["number_project"].apply(lambda x: 1 if x == 7 or x ==6 else 0 ) #30%
+data_set["Have6proj"] = data_set["number_project"].apply(lambda x: 1 if x == 6 else 0 ) #22%
+data_set["Have4proj"] = data_set["number_project"].apply(lambda x: 1 if x == 4 else 0 ) #22%
+data_set["Have5proj"] = data_set["number_project"].apply(lambda x: 1 if x == 5 else 0 ) #48% !!!
+data_set["Have3proj"] = data_set["number_project"].apply(lambda x: 1 if x == 3 else 0 ) # 31%
 data_set["Have2proj"] = data_set["number_project"].apply(lambda x: 1 if x == 2 else 0 ) #!!! 43%
-data_set.drop('number_project', axis=1, inplace=True)
+# data_set.drop('number_project', axis=1, inplace=True)
 
 #average_montly_hours:
 # print(data_set["average_montly_hours"].max())
 # print(data_set["average_montly_hours"].min())
-data_set["hour>273"] = data_set["average_montly_hours"].apply(lambda x: 1 if x>273 else 0)
-data_set.drop('average_montly_hours', axis=1, inplace=True)
+
+
+
+
+
+data_set["average_montly_hours"]= (data_set["average_montly_hours"] - data_set["average_montly_hours"].mean())
+# print(data_set["average_montly_hours"])
+data_set["hour>273"] = data_set["average_montly_hours"].apply(lambda x: 1 if abs(x)<40 else 0)
+# data_set.drop('average_montly_hours', axis=1, inplace=True)
 
 #time_spend_company:
 # print(data_set["time_spend_company"].unique())
@@ -53,21 +66,21 @@ data_set["time_sp_comp5"] = data_set["time_spend_company"].apply(lambda x: 1 if 
 # data_set["time_sp_comp7"] = data_set["time_spend_company"].apply(lambda x: 1 if x==7 else 0)
 # data_set["time_sp_comp8"] = data_set["time_spend_company"].apply(lambda x: 1 if x==8 else 0)
 # data_set["time_sp_comp10"] = data_set["time_spend_company"].apply(lambda x: 1 if x==10 else 0)
-data_set.drop('time_spend_company', axis=1, inplace=True)
+# data_set.drop('time_spend_company', axis=1, inplace=True)
 
 
 #last_evaluation:
 data_set["le>07"] = data_set["last_evaluation"].apply(lambda x: 1 if x>0.68 and x<0.80 else 0)
-data_set.drop('last_evaluation', axis=1, inplace=True)
-data_set.drop('Work_accident', axis=1, inplace=True)
-data_set.drop('promotion_last_5years', axis=1, inplace=True)
+# data_set.drop('last_evaluation', axis=1, inplace=True)
+# data_set.drop('Work_accident', axis=1, inplace=True)
+# data_set.drop('promotion_last_5years', axis=1, inplace=True)
 
 
 
 #sales:
 # print(data_set["sales"].unique())
 data_set['salesID'] = pd.factorize(data_set.sales)[0]
-data_set.drop('sales', axis=1, inplace=True)
+# data_set.drop('sales', axis=1, inplace=True)
 
 print(data_set["salary"].unique())
 # for i in set(data_set["salary"]):
@@ -129,3 +142,38 @@ clf.fit(x_train, y_train)
 
 # print(reg.score(x_test,y_test))
 print(clf.score(x_test,y_test))
+
+
+
+
+
+
+#H2O:
+# GB:
+
+#init and connect:
+h2.init()
+h2.connect()
+#Formalization:
+tf = h2.H2OFrame(data_set[:10000])
+trenfields = list(fields)
+#model_build, train and save:
+air_model = H2OGradientBoostingEstimator(distribution = "AUTO", ntrees=100, max_depth=400, learn_rate=0.1, fold_assignment="Random", nfolds =30 )
+air_model.train(x=trenfields, y="left",training_frame=tf)
+#h2.h2o.save_model(air_model)
+#loadmodel:
+#model_air3 = h2.h2o.load_model("model_name")
+#job:
+testset = h2.H2OFrame(data_set[10000:])
+ts = air_model.predict(testset)
+#result_formalization:
+ts = ts.round(0)
+ts = ts.as_data_frame()
+#Array comparison
+tar = data_set.left[10000:]
+print(accuracy_score(ts,tar))
+
+
+
+
+
