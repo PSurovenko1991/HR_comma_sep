@@ -19,7 +19,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
-
+from sklearn.ensemble import AdaBoostClassifier
 
 data_set = pd.read_csv("HR_comma_sep.csv",",")
 print(data_set.info())
@@ -99,7 +99,7 @@ plt.show()
 
 # Important fields:
 fields =  (np.extract(abs((correlation.left))>0.15, (correlation.columns)))
-fields = np.delete(fields,1)
+fields = np.delete(fields,2)
 print("Important fields: ",fields)
 
 # Formation of test sets:
@@ -115,7 +115,7 @@ target = data_set["left"]
 model_gb = GaussianNB()
 model_gb.fit(x_train,y_train)
 
-rF = RandomForestRegressor(n_estimators=70,max_features = 9,max_depth=11)
+rF = RandomForestRegressor(n_estimators=300,max_features = 4,max_depth=90, n_jobs=-1)
 rF.fit(x_train,y_train)
 
 model_knc = KNeighborsClassifier(n_neighbors = 12)
@@ -126,8 +126,11 @@ model_lr.fit(x_train,y_train)
 
 model_svc = svm.SVC()
 model_svc.fit(x_train,y_train)
+model_ada = AdaBoostClassifier(n_estimators =700 )
+model_ada.fit(x_train,y_train)
 
 #results:
+print(model_ada.score(x_test, y_test)) 
 print(model_gb.score(x_test, y_test)) 
 print(rF.score(x_test,y_test))
 print(model_knc.score(x_test,y_test))
@@ -148,10 +151,10 @@ print(clf.score(x_test,y_test))
 
 
 
-#H2O:
-# GB:
+H2O:
+GB:
 
-#init and connect:
+init and connect:
 h2.init()
 h2.connect()
 #Formalization:
@@ -172,8 +175,3 @@ ts = ts.as_data_frame()
 #Array comparison
 tar = data_set.left[10000:]
 print(accuracy_score(ts,tar))
-
-
-
-
-
